@@ -34,8 +34,6 @@ namespace ResponsiJuniorProject
 
             LoadProyekComboBox();
             LoadStatusKontrakComboBox();
-            LoadFiturSelesaiComboBox();
-            LoadJumlahBugComboBox();
             LoadDeveloperData();
         }
 
@@ -74,32 +72,6 @@ namespace ResponsiJuniorProject
             comboBox2.Items.Add("Freelance");
             comboBox2.Items.Add("Full Time");
             comboBox2.SelectedIndex = 0;
-        }
-
-        /// <summary>
-        /// Load fitur selesai options to ComboBox (0-20)
-        /// </summary>
-        private void LoadFiturSelesaiComboBox()
-        {
-            comboBox3.Items.Clear();
-            for (int i = 0; i <= 20; i++)
-            {
-                comboBox3.Items.Add(i.ToString());
-            }
-            comboBox3.SelectedIndex = 0;
-        }
-
-        /// <summary>
-        /// Load jumlah bug options to ComboBox (0-20)
-        /// </summary>
-        private void LoadJumlahBugComboBox()
-        {
-            comboBox4.Items.Clear();
-            for (int i = 0; i <= 20; i++)
-            {
-                comboBox4.Items.Add(i.ToString());
-            }
-            comboBox4.SelectedIndex = 0;
         }
 
         /// <summary>
@@ -147,10 +119,10 @@ namespace ResponsiJuniorProject
         private void ClearFields()
         {
             textBox1.Text = "";
+            textBox2.Text = "";
+            textBox3.Text = "";
             if (comboBox1.Items.Count > 0) comboBox1.SelectedIndex = 0;
             if (comboBox2.Items.Count > 0) comboBox2.SelectedIndex = 0;
-            if (comboBox3.Items.Count > 0) comboBox3.SelectedIndex = 0;
-            if (comboBox4.Items.Count > 0) comboBox4.SelectedIndex = 0;
             selectedDeveloperId = -1;
         }
 
@@ -194,8 +166,20 @@ namespace ResponsiJuniorProject
             {
                 var proyek = (Proyek)comboBox1.SelectedItem;
                 string statusKontrak = comboBox2.SelectedItem.ToString();
-                int fiturSelesai = int.Parse(comboBox3.SelectedItem.ToString());
-                int jumlahBug = int.Parse(comboBox4.SelectedItem.ToString());
+                
+                if (!int.TryParse(textBox2.Text.Trim(), out int fiturSelesai) || fiturSelesai < 0)
+                {
+                    MessageBox.Show("Fitur Selesai harus berupa angka positif!", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox2.Focus();
+                    return;
+                }
+                
+                if (!int.TryParse(textBox3.Text.Trim(), out int jumlahBug) || jumlahBug < 0)
+                {
+                    MessageBox.Show("Jumlah Bug harus berupa angka positif!", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox3.Focus();
+                    return;
+                }
 
                 // Hitung gaji yang akan ditambahkan menggunakan fungsi PostgreSQL
                 decimal gajiBaru = dbHelper.HitungGajiDeveloper(statusKontrak, fiturSelesai, jumlahBug);
@@ -249,8 +233,20 @@ namespace ResponsiJuniorProject
             {
                 var proyek = (Proyek)comboBox1.SelectedItem;
                 string statusKontrak = comboBox2.SelectedItem.ToString();
-                int fiturSelesai = int.Parse(comboBox3.SelectedItem.ToString());
-                int jumlahBug = int.Parse(comboBox4.SelectedItem.ToString());
+                
+                if (!int.TryParse(textBox2.Text.Trim(), out int fiturSelesai) || fiturSelesai < 0)
+                {
+                    MessageBox.Show("Fitur Selesai harus berupa angka positif!", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox2.Focus();
+                    return;
+                }
+                
+                if (!int.TryParse(textBox3.Text.Trim(), out int jumlahBug) || jumlahBug < 0)
+                {
+                    MessageBox.Show("Jumlah Bug harus berupa angka positif!", "Validasi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    textBox3.Focus();
+                    return;
+                }
 
                 // Hitung gaji baru menggunakan fungsi PostgreSQL
                 decimal gajiBaru = dbHelper.HitungGajiDeveloper(statusKontrak, fiturSelesai, jumlahBug);
@@ -357,11 +353,11 @@ namespace ResponsiJuniorProject
 
                 // Set Fitur Selesai
                 string fiturSelesai = row.Cells["Fitur"].Value.ToString();
-                comboBox3.SelectedItem = fiturSelesai;
+                textBox2.Text = fiturSelesai;
 
                 // Set Jumlah Bug
                 string jumlahBug = row.Cells["Bug"].Value.ToString();
-                comboBox4.SelectedItem = jumlahBug;
+                textBox3.Text = jumlahBug;
             }
         }
 
