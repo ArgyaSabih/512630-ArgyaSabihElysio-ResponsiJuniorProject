@@ -38,8 +38,11 @@ namespace ResponsiJuniorProject
                     return true;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                // Show actual error for debugging
+                System.Windows.Forms.MessageBox.Show("Database Error: " + ex.Message + "\n\nInner: " + (ex.InnerException?.Message ?? "none"), 
+                    "Debug Info", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Information);
                 return false;
             }
         }
