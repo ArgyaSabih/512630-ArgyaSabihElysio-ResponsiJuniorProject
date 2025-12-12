@@ -116,6 +116,7 @@ namespace ResponsiJuniorProject
 
         /// <summary>
         /// Get all developers with project information for DataGridView
+        /// Menggunakan fungsi PostgreSQL hitung_skor dan hitung_gaji
         /// </summary>
         public DataTable GetDeveloperDataTable()
         {
@@ -124,14 +125,17 @@ namespace ResponsiJuniorProject
             using (var conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
+                // Query menggunakan fungsi PostgreSQL untuk menghitung skor dan gaji
                 string query = @"
                     SELECT 
                         d.id_dev AS ""ID"",
-                        d.nama_dev AS ""Nama Developer"",
-                        d.status_kontrak AS ""Status Kontrak"",
-                        p.nama_proyek AS ""Nama Proyek"",
-                        d.fitur_selesai AS ""Fitur Selesai"",
-                        d.jumlah_bug AS ""Jumlah Bug""
+                        d.nama_dev AS ""Nama"",
+                        p.nama_proyek AS ""Proyek"",
+                        d.status_kontrak AS ""Status"",
+                        d.fitur_selesai AS ""Fitur"",
+                        d.jumlah_bug AS ""Bug"",
+                        hitung_skor(d.status_kontrak, d.fitur_selesai, d.jumlah_bug) AS ""SKOR"",
+                        hitung_gaji(d.status_kontrak, d.fitur_selesai, d.jumlah_bug) AS ""TOTAL GAJI""
                     FROM developer d
                     INNER JOIN proyek p ON d.id_proyek = p.id_proyek
                     ORDER BY d.id_dev";
@@ -143,6 +147,74 @@ namespace ResponsiJuniorProject
             }
 
             return dt;
+        }
+
+        /// <summary>
+        /// Hitung total gaji semua developer dalam satu proyek menggunakan fungsi PostgreSQL
+        /// </summary>
+        public decimal GetTotalGajiByProyek(int idProyek)
+        {
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = @"
+                    SELECT COALESCE(SUM(hitung_gaji(status_kontrak, fitur_selesai, jumlah_bug)), 0)
+                    FROM developer
+                    WHERE id_proyek = @id_proyek";
+
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@id_proyek", idProyek);
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToDecimal(result) : 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hitung gaji developer menggunakan fungsi PostgreSQL
+        /// </summary>
+        public decimal HitungGajiDeveloper(string statusKontrak, int fiturSelesai, int jumlahBug)
+        {
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "SELECT hitung_gaji(@status, @fitur, @bug)";
+
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@status", statusKontrak);
+                    cmd.Parameters.AddWithValue("@fitur", fiturSelesai);
+                    cmd.Parameters.AddWithValue("@bug", jumlahBug);
+                    var result = cmd.ExecuteScalar();
+                    return result != null ? Convert.ToDecimal(result) : 0;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cek apakah operasi akan menyebabkan proyek underbudget
+        /// </summary>
+        public bool CekBudgetProyek(int idProyek, decimal gajiBaruDeveloper, int? excludeIdDev = null)
+        {
+            var proyek = GetProyekById(idProyek);
+            if (proyek == null) return false;
+
+            decimal totalGajiSaatIni = GetTotalGajiByProyek(idProyek);
+
+            // Jika update, kurangi gaji developer yang sedang di-update
+            if (excludeIdDev.HasValue)
+            {
+                var devLama = GetDeveloperById(excludeIdDev.Value);
+                if (devLama != null)
+                {
+                    decimal gajiLama = HitungGajiDeveloper(devLama.StatusKontrak, devLama.FiturSelesai, devLama.JumlahBug);
+                    totalGajiSaatIni -= gajiLama;
+                }
+            }
+
+            decimal totalGajiBaru = totalGajiSaatIni + gajiBaruDeveloper;
+            return totalGajiBaru <= proyek.Budget;
         }
 
         /// <summary>
@@ -161,15 +233,15 @@ namespace ResponsiJuniorProject
                     {
                         while (reader.Read())
                         {
-                            var developer = new Developer
-                            {
-                                IdDev = reader.GetInt32(0),
-                                IdProyek = reader.GetInt32(1),
-                                NamaDev = reader.GetString(2),
-                                StatusKontrak = reader.GetString(3),
-                                FiturSelesai = reader.GetInt32(4),
-                                JumlahBug = reader.GetInt32(5)
-                            };
+                            // Gunakan factory method untuk membuat instance (polymorphism)
+                            var developer = Developer.Create(
+                                reader.GetInt32(0),
+                                reader.GetInt32(1),
+                                reader.GetString(2),
+                                reader.GetString(3),
+                                reader.GetInt32(4),
+                                reader.GetInt32(5)
+                            );
                             developerList.Add(developer);
                         }
                     }
@@ -194,15 +266,15 @@ namespace ResponsiJuniorProject
                     {
                         if (reader.Read())
                         {
-                            return new Developer
-                            {
-                                IdDev = reader.GetInt32(0),
-                                IdProyek = reader.GetInt32(1),
-                                NamaDev = reader.GetString(2),
-                                StatusKontrak = reader.GetString(3),
-                                FiturSelesai = reader.GetInt32(4),
-                                JumlahBug = reader.GetInt32(5)
-                            };
+                            // Gunakan factory method untuk membuat instance (polymorphism)
+                            return Developer.Create(
+                                reader.GetInt32(0),
+                                reader.GetInt32(1),
+                                reader.GetString(2),
+                                reader.GetString(3),
+                                reader.GetInt32(4),
+                                reader.GetInt32(5)
+                            );
                         }
                     }
                 }

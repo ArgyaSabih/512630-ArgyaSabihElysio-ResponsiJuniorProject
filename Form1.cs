@@ -120,6 +120,20 @@ namespace ResponsiJuniorProject
                 {
                     dataGridView1.Columns["ID"].Visible = false;
                 }
+
+                // Format kolom TOTAL GAJI sebagai currency
+                if (dataGridView1.Columns.Contains("TOTAL GAJI"))
+                {
+                    dataGridView1.Columns["TOTAL GAJI"].DefaultCellStyle.Format = "N0";
+                    dataGridView1.Columns["TOTAL GAJI"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                }
+
+                // Format kolom SKOR
+                if (dataGridView1.Columns.Contains("SKOR"))
+                {
+                    dataGridView1.Columns["SKOR"].DefaultCellStyle.Format = "N2";
+                    dataGridView1.Columns["SKOR"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+                }
             }
             catch (Exception ex)
             {
@@ -179,14 +193,27 @@ namespace ResponsiJuniorProject
             try
             {
                 var proyek = (Proyek)comboBox1.SelectedItem;
-                var developer = new Developer
+                string statusKontrak = comboBox2.SelectedItem.ToString();
+                int fiturSelesai = int.Parse(comboBox3.SelectedItem.ToString());
+                int jumlahBug = int.Parse(comboBox4.SelectedItem.ToString());
+
+                // Hitung gaji yang akan ditambahkan menggunakan fungsi PostgreSQL
+                decimal gajiBaru = dbHelper.HitungGajiDeveloper(statusKontrak, fiturSelesai, jumlahBug);
+
+                // Cek apakah budget proyek mencukupi
+                if (!dbHelper.CekBudgetProyek(proyek.IdProyek, gajiBaru))
                 {
-                    IdProyek = proyek.IdProyek,
-                    NamaDev = textBox1.Text.Trim(),
-                    StatusKontrak = comboBox2.SelectedItem.ToString(),
-                    FiturSelesai = int.Parse(comboBox3.SelectedItem.ToString()),
-                    JumlahBug = int.Parse(comboBox4.SelectedItem.ToString())
-                };
+                    MessageBox.Show($"Tidak dapat menambah developer!\n\nProyek '{proyek.NamaProyek}' akan menjadi UNDERBUDGET.\nBudget proyek: Rp {proyek.Budget:N0}\nGaji developer baru: Rp {gajiBaru:N0}", 
+                        "Budget Tidak Mencukupi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Gunakan factory method untuk membuat developer (polymorphism)
+                var developer = Developer.Create(statusKontrak);
+                developer.IdProyek = proyek.IdProyek;
+                developer.NamaDev = textBox1.Text.Trim();
+                developer.FiturSelesai = fiturSelesai;
+                developer.JumlahBug = jumlahBug;
 
                 if (dbHelper.InsertDeveloper(developer))
                 {
@@ -221,15 +248,28 @@ namespace ResponsiJuniorProject
             try
             {
                 var proyek = (Proyek)comboBox1.SelectedItem;
-                var developer = new Developer
+                string statusKontrak = comboBox2.SelectedItem.ToString();
+                int fiturSelesai = int.Parse(comboBox3.SelectedItem.ToString());
+                int jumlahBug = int.Parse(comboBox4.SelectedItem.ToString());
+
+                // Hitung gaji baru menggunakan fungsi PostgreSQL
+                decimal gajiBaru = dbHelper.HitungGajiDeveloper(statusKontrak, fiturSelesai, jumlahBug);
+
+                // Cek apakah budget proyek mencukupi (exclude developer yang sedang di-update)
+                if (!dbHelper.CekBudgetProyek(proyek.IdProyek, gajiBaru, selectedDeveloperId))
                 {
-                    IdDev = selectedDeveloperId,
-                    IdProyek = proyek.IdProyek,
-                    NamaDev = textBox1.Text.Trim(),
-                    StatusKontrak = comboBox2.SelectedItem.ToString(),
-                    FiturSelesai = int.Parse(comboBox3.SelectedItem.ToString()),
-                    JumlahBug = int.Parse(comboBox4.SelectedItem.ToString())
-                };
+                    MessageBox.Show($"Tidak dapat mengupdate developer!\n\nProyek '{proyek.NamaProyek}' akan menjadi UNDERBUDGET.\nBudget proyek: Rp {proyek.Budget:N0}\nGaji developer baru: Rp {gajiBaru:N0}", 
+                        "Budget Tidak Mencukupi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Gunakan factory method untuk membuat developer (polymorphism)
+                var developer = Developer.Create(statusKontrak);
+                developer.IdDev = selectedDeveloperId;
+                developer.IdProyek = proyek.IdProyek;
+                developer.NamaDev = textBox1.Text.Trim();
+                developer.FiturSelesai = fiturSelesai;
+                developer.JumlahBug = jumlahBug;
 
                 if (dbHelper.UpdateDeveloper(developer))
                 {
@@ -297,14 +337,14 @@ namespace ResponsiJuniorProject
                 selectedDeveloperId = Convert.ToInt32(row.Cells["ID"].Value);
 
                 // Fill the form fields
-                textBox1.Text = row.Cells["Nama Developer"].Value.ToString();
+                textBox1.Text = row.Cells["Nama"].Value.ToString();
 
                 // Set Status Kontrak
-                string statusKontrak = row.Cells["Status Kontrak"].Value.ToString();
+                string statusKontrak = row.Cells["Status"].Value.ToString();
                 comboBox2.SelectedItem = statusKontrak;
 
                 // Set Proyek
-                string namaProyek = row.Cells["Nama Proyek"].Value.ToString();
+                string namaProyek = row.Cells["Proyek"].Value.ToString();
                 for (int i = 0; i < comboBox1.Items.Count; i++)
                 {
                     var proyek = (Proyek)comboBox1.Items[i];
@@ -316,11 +356,11 @@ namespace ResponsiJuniorProject
                 }
 
                 // Set Fitur Selesai
-                string fiturSelesai = row.Cells["Fitur Selesai"].Value.ToString();
+                string fiturSelesai = row.Cells["Fitur"].Value.ToString();
                 comboBox3.SelectedItem = fiturSelesai;
 
                 // Set Jumlah Bug
-                string jumlahBug = row.Cells["Jumlah Bug"].Value.ToString();
+                string jumlahBug = row.Cells["Bug"].Value.ToString();
                 comboBox4.SelectedItem = jumlahBug;
             }
         }

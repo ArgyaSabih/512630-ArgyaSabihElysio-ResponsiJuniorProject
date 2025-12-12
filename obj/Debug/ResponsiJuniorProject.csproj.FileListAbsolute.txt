@@ -21,7 +21,6 @@ c:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Buffers
 c:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Memory.dll
 c:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Buffers.xml
 c:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Memory.xml
-C:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\obj\Debug\ResponsiJuniorProject.exe.config
 C:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Numerics.Vectors.dll
 C:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\System.Numerics.Vectors.xml
 C:\Users\sabih\praktikum\Responsi\ResponsiJuniorProject\bin\Debug\Microsoft.Bcl.AsyncInterfaces.dll
